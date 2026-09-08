@@ -1,3 +1,58 @@
+# AnomalyVFM-X — bản demo nhẹ và giao diện web
+
+Đây là nhánh quản lý phục vụ học tập của Xuân, bổ sung bộ cài Windows gọn nhẹ,
+giao diện web chạy local và tài liệu bảo trì cho agent. Phần mã nghiên cứu
+AnomalyVFM bên dưới vẫn được giữ nguyên để tiện đối chiếu paper.
+
+## Cài nhanh trên Windows
+
+Yêu cầu tối thiểu:
+
+- Windows 10/11 64-bit;
+- khoảng 8 GB dung lượng trống;
+- Git và [uv](https://docs.astral.sh/uv/getting-started/installation/);
+- NVIDIA GPU được khuyến nghị; không có GPU vẫn chạy CPU nhưng chậm hơn.
+
+```powershell
+git clone git@github.com:XuanKio/AnomalyVFM-X.git
+cd AnomalyVFM-X
+.\setup_demo.cmd
+.\web_demo.cmd
+```
+
+Trình duyệt sẽ mở tại <http://127.0.0.1:7860>. Model được tải một lần vào
+`%LOCALAPPDATA%\AnomalyVFM-X` và các lần sau có thể chạy offline.
+
+Chạy ảnh bằng terminal:
+
+```powershell
+.\demo.cmd demo_images\hazelnut_normal.png demo_images\hazelnut_defective.png
+```
+
+Kết quả được lưu trong `outputs/`. Không cần tải dataset 93.8 GB để chạy demo.
+
+## Tài liệu dự án
+
+- [Hướng dẫn cài đặt đầy đủ](docs/SETUP.md)
+- [Kiến trúc và luồng dữ liệu](docs/ARCHITECTURE.md)
+- [Demo CLI và web](docs/DEMO.md)
+- [Dataset và cấu trúc dữ liệu](docs/DATASETS.md)
+- [Sinh dữ liệu tổng hợp](docs/SYNTHETIC_DATA.md)
+- [Huấn luyện](docs/TRAINING.md)
+- [Đánh giá](docs/EVALUATION.md)
+- [Phát triển và kiểm thử](docs/DEVELOPMENT.md)
+- [Xử lý lỗi](docs/TROUBLESHOOTING.md)
+- [Git workflow](docs/GIT_WORKFLOW.md)
+
+Agent làm việc với repo phải đọc [AGENTS.md](AGENTS.md) trước khi chỉnh sửa.
+
+> **Lưu ý:** anomaly score là điểm tương đối, không phải phần trăm xác suất.
+> Ngưỡng phân loại chính thức phải được hiệu chỉnh trên dataset mục tiêu.
+
+---
+
+## Tài liệu nghiên cứu AnomalyVFM
+
 <div align="center">
 <h1 align="center">[CVPR'26] AnomalyVFM</h1>
 
@@ -109,7 +164,7 @@ save_predictions_with_paths(mask.float(), ["./pred.png"], ".", suffix="")
 
 Clone this repository and navigate to the project directory:
 ```bash
-git clone https://github.com/MaticFuc/AnomalyVFM.git
+git clone git@github.com:XuanKio/AnomalyVFM-X.git
 cd AnomalyVFM
 ```
 
