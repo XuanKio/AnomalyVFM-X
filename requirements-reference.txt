@@ -1,0 +1,3 @@
+# Optional CPU reference-image detector. Install into the existing demo venv.
+# Do not install alongside a different OpenCV wheel providing the same cv2 module.
+opencv-python-headless==4.12.0.88

@@ -1,4 +1,5 @@
 import glob
+from pathlib import Path
 
 import torch
 import torchvision.transforms as T
@@ -31,14 +32,28 @@ class AuxilaryDataset(Dataset):
             mask = T.ToTensor()(mask)
             mask = self.mask_transform(mask)
             mask = torch.where(mask > 0.5, 1.0, 0.0)
+            # Optional reviewed tri-state labels: white pixels in
+            # ground_truth/ignore are unknown, not negative supervision.
+            ignore_file = Path(file).parents[2] / "ground_truth" / "ignore" / Path(file).name
+            if ignore_file.exists():
+                with Image.open(ignore_file) as opened:
+                    ignore = T.ToTensor()(opened.convert("L"))
+                ignore = self.mask_transform(ignore)
+                if ignore.shape != mask.shape:
+                    raise ValueError(f"Ignore mask shape differs from label: {ignore_file}")
+                valid_mask = (ignore <= 0.5).float()
+            else:
+                valid_mask = torch.ones_like(mask)
         else:
             mask = torch.zeros((1, img.shape[-1], img.shape[-1]))
             mask = self.mask_transform(mask)
             mask = torch.where(mask > 0.5, 1.0, 0.0)
+            valid_mask = torch.ones_like(mask)
 
         sample = {
             "image": img,
             "mask": mask,
+            "valid_mask": valid_mask,
             "is_anom": float(int(is_anom)),
             "path": file,
         }

@@ -1,0 +1,34 @@
+[
+  {
+    "name": "car_panel",
+    "edit_support_xyxy": [700, 440, 1020, 620],
+    "review_status": "accepted_weak_label",
+    "review_note": "Mask follows three scratches and the paint chip; all candidate pixels lie in intended edit support.",
+    "prompt_good": "Photorealistic pristine silver vehicle body panel, no scratches, text or logos.",
+    "prompt_bad": "Edit the same image with three thin irregular scratches and a small paint chip in the center-lower panel; preserve the rest."
+  },
+  {
+    "name": "cable",
+    "edit_support_xyxy": [620, 420, 760, 610],
+    "review_status": "accepted_weak_label",
+    "review_note": "Mask covers the conspicuous frayed cut; it remains a weak label, not certified pixel ground truth.",
+    "prompt_good": "Photorealistic pristine cable harness and connectors with intact insulation.",
+    "prompt_bad": "Edit the same image with a cut and frayed split in the central black cable jacket; preserve the rest."
+  },
+  {
+    "name": "metal_plate",
+    "edit_support_xyxy": [900, 690, 1150, 850],
+    "review_status": "rejected_incomplete_mask",
+    "review_note": "Automatic mask marks only the scratch tip and misses most of its visible length; reserved as a qualitative holdout.",
+    "prompt_good": "Photorealistic pristine machined aluminum housing with holes, no scratches.",
+    "prompt_bad": "Edit the same image with a thin dark scratch and gouge across the lower-right plate; preserve the rest."
+  },
+  {
+    "name": "pcb",
+    "edit_support_xyxy": [990, 440, 1120, 550],
+    "review_status": "accepted_weak_label",
+    "review_note": "Existing imagegen PCB pair reused from the previous comparison; exact prior prompt not recorded. Mask covers the apparent local edit.",
+    "prompt_good": null,
+    "prompt_bad": null
+  }
+]

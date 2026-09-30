@@ -1,17 +1,16 @@
 import argparse
 import os
 import warnings
-from test import test
+from functools import partial
 
 import torch
 import torchvision
-import torchvision.transforms as T
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from aux_dataset import AuxilaryDataset
 from decoder import SimpleDecoder, SimplePredictor
-from logger import log_results
+from mask_ops import masked_mean, preserve_defects_at_decoder_scale
 from models.model import BACKBONES, FeatureExtractor
 from peft_local.peft_func import PeftType
 from utils import (OPTIMIZERS, SCHEDULERS, get_optimizer, get_scheduler,
@@ -61,6 +60,10 @@ def get_args():
         "--data-path",
         default="./synthetic_dataset_flux_filter_dinov3/",
     )
+    parser.add_argument("--remote-data-url", default=None,
+                        help="Stream training PNGs from a seekable Hugging Face ZIP URL")
+    parser.add_argument("--remote-network-budget-gib", default=4.0, type=float,
+                        help="Maximum network bytes for the remote training dataset")
     parser.add_argument(
         "--image-size", default=768, type=int
     )  # For DINOv2 and CLIP we used 672 to get the same ftr size
@@ -182,16 +185,25 @@ def main(args):
 
     img_transform = model.get_img_transform()
 
-    mask_transform = T.Compose(
-        [
-            T.Resize((feat_size * (2**num_up_layers), feat_size * (2**num_up_layers))),
-        ]
-    )
+    decoder_size = feat_size * (2**num_up_layers)
+    mask_transform = partial(preserve_defects_at_decoder_scale, size=decoder_size)
 
-    dataset = AuxilaryDataset(args.data_path, img_transform, mask_transform)
+    if args.remote_data_url:
+        from remote_aux_dataset import RemoteAuxilaryDataset
+
+        if not 0 < args.remote_network_budget_gib <= 1024:
+            raise ValueError("--remote-network-budget-gib must be in (0, 1024]")
+        dataset = RemoteAuxilaryDataset(
+            img_transform, mask_transform, url=args.remote_data_url,
+            max_network_bytes=int(args.remote_network_budget_gib * 1024**3),
+        )
+        workers = 0  # One seekable HTTP session; multi-worker random reads duplicate the index.
+    else:
+        dataset = AuxilaryDataset(args.data_path, img_transform, mask_transform)
+        workers = 4
 
     batch_size = args.batch_size // args.accumulation_steps
-    loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=workers)
     infinite_loader = InfiniteDataloader(loader)
 
     alpha = 0.1
@@ -211,6 +223,9 @@ def main(args):
         for _, sample in zip(inner_loop, infinite_loader):
             image = sample["image"].cuda()
             mask_gt = sample["mask"].cuda()
+            valid_mask = sample.get("valid_mask")
+            if valid_mask is not None:
+                valid_mask = valid_mask.cuda()
             score_gt = sample["is_anom"].cuda()
             summary, ftrs = model(image)
 
@@ -233,7 +248,7 @@ def main(args):
             l_mask_2 = alpha * c.log()
             l_mask = l_mask_1 - l_mask_2
 
-            l_mask = l_mask.mean()
+            l_mask = l_mask.mean() if valid_mask is None else masked_mean(l_mask, valid_mask)
 
             loss = l_img + l_mask
             loss /= accumulation_steps
@@ -251,6 +266,8 @@ def main(args):
             )
 
         if args.evaluate and it > 0 and (it + 1) % test_num == 0:
+            from test import test
+            from logger import log_results
 
             model.eval()
             decoder.eval()
