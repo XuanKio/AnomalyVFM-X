@@ -34,7 +34,7 @@ patch_size`, rồi đưa qua decoder convolution.
 4. nạp `model.safetensors`;
 5. chạy forward dưới autocast BF16 và `no_grad`.
 
-Checkpoint demo CLIP có cấu hình gốc image size 672, DoRA rank 64. Demo nhẹ cập
+Checkpoint demo CLIP có cấu hình gốc image size 672, DoRA rank 64. CLI demo cũ cập
 nhật `model.model.H` và `model.feat_size` về 336/patch size sau khi load. Trọng
 số không đổi, nhưng độ phân giải khác benchmark nên kết quả chỉ dùng minh họa.
 
@@ -60,19 +60,49 @@ layer hoặc rank sẽ làm state dict không tương thích nếu không migrat
 Browser ──multipart POST /predict──► ThreadingHTTPServer
                                       │
                                       ├─ PIL decode
-                                      ├─ Runtime.predict (khóa tuần tự GPU)
+                                      ├─ ProcessingModes: light → PaperRuntime
+                                      │                   detailed → DistilledRuntime
                                       ├─ heatmap + overlay
 Browser ◄──── JSON + PNG base64 ──────┘
 ```
 
-Model được load một lần khi server khởi động. `threading.Lock` ngăn hai request
-cùng dùng GPU 4 GB. Server bind `127.0.0.1`, không được truy cập từ máy khác.
+Model được load một lần khi server khởi động; khóa bảo vệ inference. Web Nhẹ
+cố định CLIP 672. `paper_inference.predict_single_image` dùng submodules đã nạp
+trọng số FP32, transform gốc, autocast CUDA BF16, decoder logits → pool5 →
+float sigmoid, đúng `predict_single_image.py` của tác giả. Pool nằm ngoài
+autocast. Không gọi `hf_model.forward` vì nó sigmoid trước khi trả mask.
+
+Bản đồ native 96×96 được trả ở `native_mask` (uint8 truncate). Sau đó mới
+nội suy bilinear để tạo preview và mask nhị phân trong `demo_visuals.py`.
+Threshold không đổi bản đồ native/score. `raw_mask` vẫn là PNG preview.
+Không EXIF transpose trong nhánh gốc. CPU là fallback FP32 riêng về số học.
+`verify_paper_parity.py` so bằng các câu lệnh trích nguyên từ script tác giả,
+cùng checkpoint HF, không phải xác minh trọng số PKL độc lập.
+
+`web_demo.Runtime` là alias của `PaperRuntime`. `distilled_inference.py` giữ
+phương pháp mới tách riêng, hiện chưa có student nên trả 503. CLI `demo_fast.py`
+giữ demo cũ 336 và HF forward, không dùng làm đối chứng script ảnh đơn gốc.
 
 ## Contract cần giữ ổn định
 
 - CLI mặc định: `demo_fast.py test.png`, size 336.
 - Output CLI: `outputs/<stem>_result.png`.
 - Web `POST /predict`: multipart field tên `image`.
-- JSON web: `score`, `seconds`, `vram_gb`, `image`.
-- Visualization: ba cột Input / Anomaly heatmap / Overlay.
-- Không tự gán nhãn binary bằng threshold mặc định.
+- Web nhận thêm `size` (chỉ 672; giá trị khác trả 400) và `threshold` (0–1, mặc định minh họa 0,50).
+- `mode=light` mặc định gọi nhánh paper; `mode=detailed` hiện trả 503 chưa sẵn
+  sàng. Mode không hợp lệ trả 400; không tự rơi về phương pháp khác.
+- JSON giữ `score`, `seconds`, `vram_gb`, `image` (composite bốn cột); thêm
+  `panels`, `raw_mask`, `score_range`, `mask_area_percent`, `threshold`,
+  `native_mask`, `native_mask_shape`, `inference_protocol`,
+  `threshold_calibrated=false`, `model_id`, `input_size`, `device`, `smoothing_kernel`.
+- `GET /config` trả model/chế độ mặc định/device và trạng thái `processing_modes`.
+  Response dự đoán thêm `processing_mode`, `method_id`, `method_label`.
+  CLI visualization vẫn ba cột.
+- Mask trắng/đen là dự đoán chưa hiệu chuẩn; không gán good/bad hay gọi nó là GT.
+
+## Thử nghiệm đối chiếu độc lập
+
+Web không còn UI, import detector hoặc route `/predict-reference` (404).
+`demo_reference.py` và `compare_reference.py` giữ thí nghiệm CPU ngoài web,
+không được gọi trong chế độ gốc hoặc nhánh chưng cất. Xem
+[REFERENCE_DETECTION.md](REFERENCE_DETECTION.md) về cách chạy và giới hạn.

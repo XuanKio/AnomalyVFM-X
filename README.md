@@ -1,4 +1,4 @@
-# AnomalyVFM-X — bản demo nhẹ và giao diện web
+# AnomalyVFM-X — demo phát hiện vùng bất thường
 
 Đây là nhánh quản lý phục vụ học tập của Xuân, bổ sung bộ cài Windows gọn nhẹ,
 giao diện web chạy local và tài liệu bảo trì cho agent. Phần mã nghiên cứu
@@ -23,6 +23,24 @@ cd AnomalyVFM-X
 Trình duyệt sẽ mở tại <http://127.0.0.1:7860>. Model được tải một lần vào
 `%LOCALAPPDATA%\AnomalyVFM-X` và các lần sau có thể chạy offline.
 
+Sau khi cài xong, trong VS Code chỉ cần mở `web_demo.py` và bấm **Run Python
+File** (hoặc `python web_demo.py`). Trên Windows, file tự chọn Python demo
+3.10 và cache model, kể cả khi nút Run đang dùng Python 3.13 hệ thống.
+Cache cũ trong `%USERPROFILE%\.cache\huggingface-anomalyvfm` cũng được tự nhận
+sau khi kiểm tra đủ checkpoint; không cần tải lại hoặc tạo junction.
+
+Web mặc định dùng **Nhẹ · phương pháp gốc của bài báo**, chạy CLIP 672 × 672
+và trả bốn ảnh: ảnh gốc, heatmap, overlay và **mặt nạ dự đoán**. Độ phân giải
+được cố định 672 theo cấu hình CLIP gốc. **Chi tiết** dành cho phương pháp mới sau chưng
+cất; hiện chưa sẵn sàng vì chưa có checkpoint hoàn tất. Code suy luận gốc được
+tách trong `paper_inference.py`, code phương pháp mới ở `distilled_inference.py`.
+Luồng ảnh đơn theo `predict_single_image.py` của tác giả: trọng số FP32,
+CUDA autocast BF16, làm mượt logits 5×5 trước sigmoid. Nút **Lưu pred.png gốc**
+trả bản đồ native 96×96. Heatmap/overlay và mặt nạ nhị phân là phần hiển thị web.
+Mặt nạ trắng/đen được tạo từ ngưỡng do người dùng chọn (0,50 chỉ để minh họa),
+không phải ground truth. Thang màu cố định 0–1, không kéo giãn riêng từng ảnh.
+Không tải thêm model và không cam kết tái lập độ chính xác RADIO trong paper.
+
 Chạy ảnh bằng terminal:
 
 ```powershell
@@ -30,6 +48,20 @@ Chạy ảnh bằng terminal:
 ```
 
 Kết quả được lưu trong `outputs/`. Không cần tải dataset 93.8 GB để chạy demo.
+
+So sánh thử nghiệm toàn ảnh với phương pháp **toàn ảnh + các ô chồng lấn**:
+
+```powershell
+python compare_tiling.py duong_dan_anh.png --output-dir outputs/tiling_comparison
+```
+
+Lệnh dùng lại checkpoint offline, xuất `comparison.html`, ảnh trước/sau và bản
+đồ float. Đây là CLI thử nghiệm độc lập; web vẫn giữ chế độ hiện tại. Cấu hình
+mặc định chưa hiệu chỉnh và một ảnh không đủ chứng minh tăng độ chính xác.
+Xem [cách chạy và giới hạn](docs/DEMO.md#so-sánh-toàn-ảnh-và-chia-ô-chồng-lấn).
+
+Đã bỏ thẻ và API đối chiếu ảnh lành khỏi web. Thử nghiệm cũ chỉ còn ở CLI
+`compare_reference.py`, xem [tài liệu nghiên cứu riêng](docs/REFERENCE_DETECTION.md).
 
 ## Tài liệu dự án
 
@@ -48,6 +80,15 @@ Agent làm việc với repo phải đọc [AGENTS.md](AGENTS.md) trước khi c
 
 > **Lưu ý:** anomaly score là điểm tương đối, không phải phần trăm xác suất.
 > Ngưỡng phân loại chính thức phải được hiệu chỉnh trên dataset mục tiêu.
+
+Pilot ảnh sinh và kiểm tra mask vết mảnh: xem [Sinh dữ liệu](docs/SYNTHETIC_DATA.md)
+và [Huấn luyện](docs/TRAINING.md). Pilot đầu định vị hiện chưa đạt kiểm tra báo
+nhầm trên ảnh lành, nên web demo vẫn dùng checkpoint gốc.
+Nghiên cứu nhãn yếu hiện hỗ trợ `ground_truth/ignore` đã duyệt để loại pixel
+chưa chắc chắn khỏi loss; xem [Huấn luyện](docs/TRAINING.md). Chưa có checkpoint
+mới nào vượt kiểm tra ảnh thật để đưa vào demo.
+[Quyết định nghiên cứu định vị lỗi nhỏ](docs/LOCALIZATION_RESEARCH.md) ghi rõ
+các phép thử đã loại và điều kiện đánh giá bản cải thiện tiếp theo.
 
 ---
 

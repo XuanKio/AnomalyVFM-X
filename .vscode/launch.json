@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "AnomalyVFM Web Demo",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "${env:USERPROFILE}\\.venvs\\anomalyvfm-demo\\Scripts\\python.exe",
+      "program": "${workspaceFolder}\\web_demo.py",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "env": {
+        "HF_HOME": "${env:USERPROFILE}\\.cache\\huggingface-anomalyvfm",
+        "HF_HUB_OFFLINE": "1",
+        "TRANSFORMERS_OFFLINE": "1",
+        "HF_HUB_DISABLE_SYMLINKS_WARNING": "1"
+      }
+    }
+  ]
+}

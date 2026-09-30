@@ -6,6 +6,7 @@
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Thành phần model, luồng dữ liệu và contract |
 | [SETUP.md](SETUP.md) | Cài tự động/thủ công, VS Code và gỡ cài đặt |
 | [DEMO.md](DEMO.md) | Web UI, CLI, ảnh mẫu và kịch bản thuyết trình |
+| [REFERENCE_DETECTION.md](REFERENCE_DETECTION.md) | Nhánh đối chiếu ảnh lành để tìm vết nhỏ, cách chạy và giới hạn |
 | [DATASETS.md](DATASETS.md) | Cấu trúc dataset, loader và thêm dataset mới |
 | [SYNTHETIC_DATA.md](SYNTHETIC_DATA.md) | Pipeline sinh dữ liệu ba giai đoạn |
 | [TRAINING.md](TRAINING.md) | PEFT training, tham số và checkpoint |

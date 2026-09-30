@@ -7,22 +7,52 @@ resolution by default so that inference fits comfortably on a 4 GB laptop GPU.
 from __future__ import annotations
 
 import argparse
+import json
 import time
 import warnings
 from pathlib import Path
+
+from demo_cache import configure_demo_cache
+
+# Select and validate both checkpoints before importing Hugging Face.
+MODEL_CACHE_DIR = configure_demo_cache()
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from PIL import Image, ImageDraw
+from huggingface_hub import hf_hub_download
 
-from hf_model import AnomalyVFM
+from hf_model import AnomalyVFM, AnomalyVFMConfig
 
 
 MODEL_ID = "MaticFuc/anomalyvfm_clip"
 warnings.filterwarnings(
     "ignore", message=r"The transform `ToTensor\(\)` is deprecated.*", category=UserWarning
 )
+
+
+def load_demo_model() -> AnomalyVFM:
+    """Read the cached checkpoint config explicitly before constructing the model."""
+    try:
+        config_path = Path(hf_hub_download(
+            MODEL_ID, "config.json", cache_dir=MODEL_CACHE_DIR, local_files_only=True,
+        ))
+        weights_path = Path(hf_hub_download(
+            MODEL_ID, "model.safetensors", cache_dir=MODEL_CACHE_DIR, local_files_only=True,
+        ))
+    except OSError as exc:
+        raise RuntimeError(
+            f"Demo checkpoint is incomplete in {MODEL_CACHE_DIR}. Run setup_demo.cmd."
+        ) from exc
+    config = AnomalyVFMConfig(**json.loads(config_path.read_text(encoding="utf-8")))
+    print(f"Demo checkpoint: {weights_path.parent}", flush=True)
+    return AnomalyVFM.from_pretrained(
+        weights_path.parent,
+        config=config,
+        cache_dir=MODEL_CACHE_DIR,
+        local_files_only=True,
+    )
 
 
 def parse_args() -> argparse.Namespace:
@@ -116,7 +146,7 @@ def main() -> int:
     )
     print(f"Loading {MODEL_ID} on {device}...")
     load_started = time.perf_counter()
-    model = AnomalyVFM.from_pretrained(MODEL_ID)
+    model = load_demo_model()
     configure_resolution(model, args.size)
 
     if device.type == "cuda" and torch.cuda.is_bf16_supported():

@@ -51,8 +51,15 @@ uv --version
 %LOCALAPPDATA%\AnomalyVFM-X\venv\Scripts\python.exe
 ```
 
-Khởi động demo từ terminal bằng `./web_demo.cmd`. Nên dùng file CMD vì nó tự đặt
-đúng cache và chế độ offline.
+Sau khi cài, mở `web_demo.py` và bấm **Run Python File**. File tự chuyển sang
+Python demo đã cài trên Windows, kể cả khi VS Code chọn Python 3.13, rồi dùng
+cache offline. Không cần đặt biến môi trường; `web_demo.cmd` vẫn dùng được.
+Web hiện mặc định CLIP 672, có lựa chọn nhẹ 336 trong giao diện. Không tải thêm
+checkpoint; mặt nạ trắng/đen là dự đoán theo ngưỡng chưa hiệu chuẩn. Chi tiết
+và giới hạn được ghi ở [DEMO.md](DEMO.md).
+Nếu máy đã cài bản cũ, cache đầy đủ tại
+`%USERPROFILE%\.cache\huggingface-anomalyvfm\hub` được tự nhận mà không cần
+liên kết sang AppData. Terminal in đường dẫn cache sau khi kiểm tra đủ hai model.
 
 ## Kiểm tra cài đặt
 

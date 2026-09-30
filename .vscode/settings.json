@@ -1,0 +1,4 @@
+{
+  "python.defaultInterpreterPath": "${env:USERPROFILE}\\.venvs\\anomalyvfm-demo\\Scripts\\python.exe",
+  "python.terminal.activateEnvironment": true
+}

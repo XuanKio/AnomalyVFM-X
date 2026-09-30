@@ -34,6 +34,22 @@ Invoke-RestMethod http://127.0.0.1:7860/predict -Method Post `
 
 ## Kiểm tra trước commit
 
+Kiểm thử tự động không load model thật:
+
+```powershell
+python -m unittest discover -s tests
+```
+
+Sau khi web chạy, kiểm thử model thật qua HTTP:
+
+```powershell
+python verify_web_demo.py --output-dir outputs/web_verification
+```
+
+Kiểm tra web cố định 672, size 336 bị từ chối, ngưỡng ngoài [0,1] bị từ chối, bốn ảnh và nút tải
+PNG, chú thích mask dự đoán/không phải GT, thang màu cố định và đổi ảnh lúc
+đang chạy không làm lẫn kết quả.
+
 ```powershell
 git diff --check
 git status --short

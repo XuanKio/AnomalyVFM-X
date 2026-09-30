@@ -20,6 +20,7 @@ Remote Git duy nhất dùng để quản lý là
 | --- | --- | --- |
 | Demo CLI | `demo_fast.py`, `demo.cmd` | `docs/DEMO.md` |
 | Demo web | `web_demo.py`, `web_demo.cmd` | `docs/DEMO.md` |
+| Hai chế độ suy luận | `paper_inference.py`, `distilled_inference.py`, `processing_modes.py` | `docs/DEMO.md`, `docs/ARCHITECTURE.md` |
 | Cài đặt | `setup_demo.cmd`, `demo_env.cmd`, `requirements.txt` | `docs/SETUP.md` |
 | Kiến trúc/model | `hf_model.py`, `decoder.py`, `models/` | `docs/ARCHITECTURE.md`, `models/AGENTS.md` |
 | PEFT | `peft_local/` | `docs/ARCHITECTURE.md`, `peft_local/AGENTS.md` |
@@ -39,12 +40,29 @@ này.
 - Không commit môi trường Python, cache model, checkpoint, dataset hay output.
 - Giữ Python demo ở phiên bản 3.10 và cặp `torch==2.10.0`,
   `torchvision==0.25.0` cho đến khi có lượt nâng cấp được kiểm thử riêng.
-- `demo_fast.py` và `web_demo.py` phải cùng dùng checkpoint
-  `MaticFuc/anomalyvfm_clip`, input mặc định 336 và BF16 trên GPU hỗ trợ.
+- `demo_fast.py` và `web_demo.py` cùng dùng checkpoint `MaticFuc/anomalyvfm_clip`
+  và BF16 trên GPU hỗ trợ. Theo yêu cầu đầu ra chi tiết của Xuân ngày 10/09/2026,
+  web dùng cố định 672 theo yêu cầu khôi phục phương pháp gốc ngày 30/09/2026;
+  CLI demo cũ vẫn mặc định 336, không dùng làm bằng chứng parity với script gốc.
 - Kích thước 336 là chế độ demo tiết kiệm bộ nhớ, không phải cấu hình benchmark
   trong paper. Tài liệu phải nói rõ khi báo cáo kết quả.
+- Theo yêu cầu Xuân ngày 30/09/2026: **Nhẹ** là phương pháp gốc, giữ nguyên
+  thuật toán/checkpoint trong `paper_inference.py`; mọi cải tiến ở nhánh riêng
+  `distilled_inference.py`. **Chi tiết** chỉ khả dụng khi phương pháp mới đã
+  chưng cất và kiểm chứng; không dùng CLIP gốc/pilot để giả chế độ Chi tiết.
+  Web chỉ nhận `size=672`. Nhánh gốc theo `predict_single_image.py`: trọng số
+  FP32, CUDA autocast BF16, logits → AvgPool2d(5,1,2) → float sigmoid.
+  Không thêm EXIF transpose, ảnh lành tham chiếu, tiling hay head thử nghiệm.
+  `native_mask` giữ lưới gốc và lượng tử hóa uint8 như pred.png của tác giả;
+  nội suy/threshold chỉ phục vụ hiển thị. CPU là fallback, parity kiểm tra CUDA.
+  Giữ cả dependency suy luận gốc (`demo_fast.py`, `hf_model.py`, `decoder.py`,
+  backbone và adapter đang dùng) khi phát triển student; code thay đổi thuật
+  toán mới phải nằm trong nhánh/module riêng và không làm đổi đầu ra baseline.
 - Không diễn giải anomaly score là xác suất. Không gán nhãn good/bad bằng ngưỡng
   tùy ý trong UI.
+- Web trả thêm mask trắng/đen tại ngưỡng do người dùng chọn, phải ghi rõ đó là
+  dự đoán chưa hiệu chuẩn, không phải GT. Không sửa màu/threshold theo từng ảnh
+  để giả chất lượng tương đương paper. CLI giữ visualization cũ để đối chiếu.
 - Giữ server web bind vào `127.0.0.1` theo mặc định. Không mở `0.0.0.0`, tạo
   public tunnel hoặc upload ảnh ra dịch vụ ngoài nếu chưa được yêu cầu.
 - Mọi thay đổi hành vi phải cập nhật tài liệu tương ứng và mục liên quan trong
